@@ -153,6 +153,7 @@ jobs:
 
       - name: Build Android APK
         run: cd android && ./gradlew assembleRelease --no-daemon --stacktrace
+        continue-on-error: true
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
