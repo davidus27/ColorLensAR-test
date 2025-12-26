@@ -168,31 +168,28 @@ jobs:
     defaults:
       run:
         working-directory: ./app
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: './app/package-lock.json'
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
           bundler-cache: false
 
-      - name: Install CocoaPods
-        run: sudo gem install cocoapods
+      - run: sudo gem install cocoapods
 
-      - name: Install iOS dependencies
+      - name: Expo prebuild (generate ios/)
+        run: npx expo prebuild --platform ios --clean
+
+      - name: Install iOS pods
         run: cd ios && pod install
 
       - name: Build iOS app
@@ -209,11 +206,3 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGN_ENTITLEMENTS=""
-
-      - name: Upload iOS build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-build
-          path: app/ios/build/
-          retention-days: 30
-        if: success()
