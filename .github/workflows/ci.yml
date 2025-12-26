@@ -171,6 +171,7 @@ jobs:
     defaults:
       run:
         working-directory: ./app
+
     steps:
       - uses: actions/checkout@v4
 
@@ -195,12 +196,29 @@ jobs:
       - name: Install iOS pods
         run: cd ios && pod install
 
+      - name: Build iOS app (xcarchive)
+        run: |
+          cd ios
+          xcodebuild \
+            -workspace expostarterkittypescript.xcworkspace \
+            -scheme expostarterkittypescript \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$PWD/build/App.xcarchive" \
+            clean archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS=""
+
       - name: Upload iOS build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ios-build-artifacts
-          path: ios/build/
+          path: app/ios/build/App.xcarchive
           retention-days: 30
+          if-no-files-found: error
 
       - name: Build iOS app
         run: |
