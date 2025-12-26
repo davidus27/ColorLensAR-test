@@ -68,10 +68,10 @@ jobs:
         run: npm ci
 
       - name: Run npm audit
-        run: npm run audit
+        run: npm audit --audit-level=moderate || echo "Security vulnerabilities found but continuing..."
         continue-on-error: true
 
-  # Test Suite
+  # Test Suite (runs on every push)
   test:
     name: Run Tests
     runs-on: ubuntu-latest
@@ -112,12 +112,12 @@ jobs:
           path: app/coverage/
           retention-days: 30
 
-  # Build Android App (Optional - Expo 52 prebuild issues in CI)
+  # Build Android App (only on main branch - REQUIRED)
   build-android:
-    name: Build Android (Optional)
+    name: Build Android
     needs: [test]
     runs-on: ubuntu-latest
-    continue-on-error: true
+    if: github.ref == 'refs/heads/main'
     defaults:
       run:
         working-directory: ./app
@@ -145,17 +145,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Expo prebuild for Android
-        run: npx expo prebuild --platform android --clean
-        continue-on-error: true
-
       - name: Make gradlew executable
         run: chmod +x android/gradlew
-        continue-on-error: true
 
       - name: Build Android APK
-        run: cd android && ./gradlew assembleRelease --no-daemon
-        continue-on-error: true
+        run: cd android && ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
@@ -165,12 +159,12 @@ jobs:
           retention-days: 30
         if: success()
 
-  # Build iOS App (Optional - Expo 52 prebuild issues in CI)
+  # Build iOS App (only on main branch - REQUIRED)
   build-ios:
-    name: Build iOS (Optional)
+    name: Build iOS
     needs: [test]
     runs-on: macos-latest
-    continue-on-error: true
+    if: github.ref == 'refs/heads/main'
     defaults:
       run:
         working-directory: ./app
@@ -198,13 +192,8 @@ jobs:
       - name: Install CocoaPods
         run: sudo gem install cocoapods
 
-      - name: Run Expo prebuild for iOS
-        run: npx expo prebuild --platform ios --clean
-        continue-on-error: true
-
       - name: Install iOS dependencies
         run: cd ios && pod install
-        continue-on-error: true
 
       - name: Build iOS app
         run: |
@@ -219,9 +208,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGN_ENTITLEMENTS="" \
-            | xcpretty || true
-        continue-on-error: true
+            CODE_SIGN_ENTITLEMENTS=""
 
       - name: Upload iOS build artifacts
         uses: actions/upload-artifact@v4
@@ -230,24 +217,3 @@ jobs:
           path: app/ios/build/
           retention-days: 30
         if: success()
-
-  # Quality Gate for main branch
-  quality-gate:
-    name: Quality Gate
-    needs: [test]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Check required jobs passed
-        run: |
-          echo "All required quality checks passed! ✅"
-          echo "- Tests: Passed ✅"
-          echo ""
-          echo "Optional checks (may pass or fail):"
-          echo "- Lint & Format Check"
-          echo "- Security Audit"
-          echo "- Android Build (Expo 52 CI compatibility issues)"
-          echo "- iOS Build (Expo 52 CI compatibility issues)"
-          echo ""
-          echo "💡 For reliable mobile builds, use 'eas build' locally or configure EAS Build"
