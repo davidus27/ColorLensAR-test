@@ -195,6 +195,13 @@ jobs:
       - name: Install iOS pods
         run: cd ios && pod install
 
+      - name: Upload iOS build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-artifacts
+          path: ios/build/
+          retention-days: 30
+
       - name: Build iOS app
         run: |
           cd ios
